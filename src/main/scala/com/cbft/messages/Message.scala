@@ -1,10 +1,10 @@
 package com.cbft.messages
 
+import akka.actor.Cancellable
 import spray.json.DefaultJsonProtocol
-
 import akka.dispatch.ControlMessage
 
-import scala.collection.mutable.{LinkedHashSet,HashSet}
+import scala.collection.mutable.{HashSet, LinkedHashSet}
 
 trait Message {
 
@@ -15,6 +15,8 @@ case class ActorRefReady() extends Message
 case class SendRequestHashSet(batchnum : String) extends Message with ControlMessage
 
 case class NodeOnline(node: String,boolean: Boolean) extends Message
+
+case class ScheduleCancel(node: String,schedule: Cancellable) extends Message
 
 case class Block(var height : String,var pre_hash : String,timestamp : String,merkle_root : String,var cur_hash : String,requests : LinkedHashSet[(String,String)])
 

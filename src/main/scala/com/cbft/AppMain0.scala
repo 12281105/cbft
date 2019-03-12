@@ -17,20 +17,23 @@ import scala.concurrent.Future
 import com.roundeights.hasher.Implicits._
 
 object AppMain0 extends App {
+  //创建ActorSystem
   val system = ActorSystem("cbft",ConfigFactory.load("node0.conf"))
   implicit val timeout = Timeout(5 seconds)
   import system.dispatcher
-  //println(system.dispatchers.defaultDispatcherConfig)
+
   //加载配置文件
-  //println(system.settings.config.getConfig("cbft.node"))
   var nodemap = new HashMap[String,String]
   var schedulemap = new HashMap[String,Cancellable]
+  //读取配置文件中的节点信息
   val nodes = system.settings.config.getConfig("cbft.node").entrySet().asScala.foreach(entry => {
     nodemap.put(entry.getKey,entry.getValue.unwrapped().toString)
   })
+  //NodesConfig 保存所有节点的IP-PORT信息
   nodemap.toSeq.sortBy(_._1).toMap.foreach(entry => {
     NodesConfig.addNode(entry._1,entry._2)
   })
+  //NodeInfo 保存本节点的配置信息
   NodeInfo.setHostName(system.settings.config.getString("cbft.hostname"))
 
   //本节点创建所有Actor
@@ -54,10 +57,11 @@ object AppMain0 extends App {
       val schedule = system.scheduler.schedule(1 seconds,5 seconds,new Runnable{
         override def run(): Unit = {
           val msg = Identify(nodename)
+          //检测节点是否已经在线
           val identityf: Future[ActorIdentity] = (cbft_online ? msg).mapTo[ActorIdentity]
           identityf.onSuccess({
             case  ActorIdentity(`nodename`,Some(actorRef)) =>
-              //接收到响应后
+              //接收到响应后，表示节点的ActorSystem已经启动在线
               actorRefActor ! NodeOnline(nodename,true)
               onlineActor ! NodeOnline(nodename,true)
             case ActorIdentity(`nodename`,None) =>

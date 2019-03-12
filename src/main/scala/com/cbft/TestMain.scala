@@ -25,7 +25,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 
 object TestMain extends App{
-  val system = ActorSystem("cbfttest",ConfigFactory.load("nodetest.conf"))
+  val system = ActorSystem("cbft_test",ConfigFactory.load("nodetest.conf"))
   //println(system.dispatchers.defaultDispatcherConfig)
   //加载配置文件
   //println(system.settings.config.getConfig("cbft.node"))

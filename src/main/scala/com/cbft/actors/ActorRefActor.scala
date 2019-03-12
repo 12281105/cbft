@@ -20,6 +20,7 @@ class ActorRefActor extends Actor{
   override def receive = {
     case NodeOnline(node: String,boolean: Boolean) =>{
       if(boolean==true){
+        //获取节点上所有Actor的ActorRef（Actor引用）
         reftype.foreach(tp => {
           val address = NodesConfig.getNode(node)
           val actorRefFuture : Future[ActorRef] = context.actorSelection(s"akka.tcp://cbft@$address/user/cbft_$tp").resolveOne()

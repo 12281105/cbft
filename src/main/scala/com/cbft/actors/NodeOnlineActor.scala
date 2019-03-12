@@ -4,7 +4,7 @@ import akka.actor.{Actor, ActorIdentity, ActorRef, ActorSelection, Cancellable, 
 import akka.event.Logging
 import com.cbft.common.{NodeInfo, NodesActorRef}
 import com.cbft.configs.NodesConfig
-import com.cbft.messages.{ActorRefReady, NodeOnline, Request, SyncFinish}
+import com.cbft.messages._
 import com.cbft.utils.BroadcastUtil
 
 import scala.concurrent.duration._
@@ -36,7 +36,7 @@ class NodeOnlineActor extends Actor{
               if(online.size == NodesConfig.NodeSize()){
                 //online nodes ready
                 log.info("NodeOnlineActor:{} online node ready",NodeInfo.getHostName())
-                //ScheduleActor不需要起作用，stop it
+                //所有节点都启动之后，ScheduleActor不再起作用，stop it
                 scheduleSelection ! PoisonPill
                 //如果本节点是主节点，向所有节点的RequestActor发送同步完成的消息
                 if(actorRefReady == NodesConfig.NodeSize()){
@@ -92,7 +92,6 @@ class NodeOnlineActor extends Actor{
       //开启schedule检测断开连接的节点是否重新连接
       import context.dispatcher
       val cbft_online = context.system.actorSelection(s"akka.tcp://cbft@${NodesConfig.getNode(nodename)}/user/cbft_online")
-      var schedulemap = new HashMap[String, Cancellable]
       val schedule = context.system.scheduler.schedule(3 seconds, 5 seconds, new Runnable {
         override def run(): Unit = {
 
@@ -109,8 +108,20 @@ class NodeOnlineActor extends Actor{
 
         }
       })
-      schedulemap.put(nodename, schedule)
-      val scheduleActor: ActorRef = context.system.actorOf(Props(new ScheduleActor(schedulemap)), "cbft_schedule")
+
+      val cbft_schedule = context.actorSelection("/user/cbft_schedule")
+
+      val msg = Identify(nodename)
+      val identityf: Future[ActorIdentity] = (cbft_schedule ? msg).mapTo[ActorIdentity]
+      identityf.onSuccess({
+        case  ActorIdentity(`nodename`,Some(actorRef)) =>
+          //接收到响应后
+          actorRef ! ScheduleCancel(nodename,schedule)
+        case ActorIdentity(`nodename`,None) =>
+          var schedulemap = new HashMap[String, Cancellable]
+          schedulemap.put(nodename, schedule)
+          val scheduleActor: ActorRef = context.system.actorOf(Props(new ScheduleActor(schedulemap)), "cbft_schedule")
+      })
 
     }
     case o => {

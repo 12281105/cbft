@@ -21,7 +21,7 @@ class RequestActor extends Actor{
   //requestSet 多个线程共享变量，可能需要特殊处理
   val requestSet = new LinkedHashSet[String]
   val log = Logging(context.system, this)
-  var schedule : Cancellable = null
+  //var schedule : Cancellable = null
   //每一秒钟接收到的所有request为一个batch，batchnum和块高度无直接联系
   var batchnum : Int = 1
   //var batchnumredis : Int = 1
@@ -45,6 +45,11 @@ class RequestActor extends Actor{
         })
       }
       */
+    }
+    case online : NodeOnline => {
+      if(online.boolean==false){
+        log.info("{} become offline",online.node)
+      }
     }
     case o => {
       log.info("received unknown message: {}", o)
@@ -80,11 +85,8 @@ class RequestActor extends Actor{
     */
     case online : NodeOnline => {
       if(online.boolean==false){
-        log.info("{} requestActor unbecome",NodeInfo.getHostName())
+        log.info("{} become offline",online.node)
         context.unbecome()
-        if(NodeInfo.isPrimary()){
-          schedule.cancel()
-        }
       }
     }
   }
