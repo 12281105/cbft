@@ -11,6 +11,60 @@ import com.cbft.messages.MessageJsonProtocol._
 import scala.collection.mutable.HashMap
 
 object MysqlUtil {
+
+  def getCurrentHash(block_height : Int): String ={
+    val conn = MysqlConfig.sqlconnection
+    if(conn==null){
+      return null
+    }
+    try{
+      val sql = "SELECT cur_hash FROM blockinfo WHERE block_height=?"
+      var pst = conn.prepareStatement(sql)
+      pst.setInt(1,block_height)
+      val rs = pst.executeQuery()
+      rs.next()
+      val cur_hash = rs.getString(1)
+      rs.close()
+      pst.close()
+      return cur_hash
+    }catch {
+      case e: SQLException => {
+        e.printStackTrace
+        return null
+      }
+    }finally {
+      if (conn != null) {
+        conn.close
+      }
+    }
+  }
+
+  def getBlockNumber(): Int ={
+    val conn = MysqlConfig.sqlconnection
+    if(conn==null){
+      return -1
+    }
+    try{
+      val stmt = conn.createStatement
+      val sql = "SELECT count(*) FROM blockinfo"
+      val rs = stmt.executeQuery(sql)
+      rs.next()
+      val blocknum = rs.getInt(1)
+      rs.close()
+      stmt.close()
+      return blocknum
+    }catch {
+      case e: SQLException => {
+        e.printStackTrace
+        return -1
+      }
+    }finally {
+      if (conn != null) {
+        conn.close
+      }
+    }
+  }
+
   //将区块信息写入数据库
   def writeBlock(block : Block): Boolean ={
     val conn = MysqlConfig.sqlconnection
@@ -73,6 +127,7 @@ object MysqlUtil {
     }
   }
 
+  //批量更新账户信息
   def updateAccounts(newstates : HashMap[String,Double]): Boolean ={
     val conn = MysqlConfig.sqlconnection
     if(conn == null){
@@ -112,13 +167,13 @@ object MysqlUtil {
     }
   }
 
+  //根据baseid，获取账户余额信息
   def getBalanceAccounts(baseid : String,accountinfo : HashMap[String,Double]): Unit ={
     val conn = MysqlConfig.sqlconnection
     if(conn == null){
       return false
     }
     try{
-      //将区块头信息写入数据库
       var sql = "SELECT account_id,account_balance FROM accountinfo WHERE account_id LIKE ?"
       var pst = conn.prepareStatement(sql)
       pst.setString(1,baseid+"%")

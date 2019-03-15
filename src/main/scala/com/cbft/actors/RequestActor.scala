@@ -23,7 +23,7 @@ class RequestActor extends Actor{
   val log = Logging(context.system, this)
   //var schedule : Cancellable = null
   //每一秒钟接收到的所有request为一个batch，batchnum和块高度无直接联系
-  var batchnum : Int = 1
+  var batchnum : Int = 0
   //var batchnumredis : Int = 1
 
   override def receive = {

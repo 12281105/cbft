@@ -2,24 +2,15 @@ package com.cbft
 
 import java.util.Date
 
-import akka.actor.{ActorRef, ActorSystem, Cancellable}
-import akka.event.Logging
+import akka.actor.{ActorRef, ActorSystem}
 import akka.util.Timeout
-import com.cbft.AppMain0.system
-import com.cbft.common.{NodeInfo, NodesActorRef}
-import com.cbft.configs.{MysqlConfig, NodesConfig, RedisClient}
 import com.roundeights.hasher.Implicits._
 
 import scala.language.postfixOps
-import com.cbft.messages.{ActorRefReady, Request, Transaction}
-import spray.json._
-import com.cbft.messages.MessageJsonProtocol._
-import com.cbft.utils.MerkleTree
+import com.cbft.messages.{ Request, Transaction}
 import com.typesafe.config.ConfigFactory
 
-import scala.collection.immutable.TreeMap
-import scala.collection.mutable
-import scala.collection.mutable.{HashMap, LinkedHashSet}
+import scala.collection.mutable.{HashMap}
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -61,7 +52,7 @@ object TestMain extends App{
   }
   val random = new Random()
 
-  for(i <- 1 to 100000){
+  for(i <- 1 to 1000){
     val now = new Date()
     val nowtimestamp = now.getTime.toString.substring(0,10)
     val from = accounts( random.nextInt(10000) )

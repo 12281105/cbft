@@ -48,6 +48,11 @@ object BroadcastUtil {
           tuple._2 ! rawBlock
         })
       }
+      case genesisBlock : GenesisBlock =>{
+        NodesActorRef.getNodesActorRef("blockchain").foreach(tuple =>{
+          tuple._2 ! genesisBlock
+        })
+      }
     }
   }
 }

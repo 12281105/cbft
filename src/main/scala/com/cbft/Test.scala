@@ -24,6 +24,7 @@ object Test extends App {
   println(random.nextInt(10000)+1)
   println(random.nextInt(10000)+1)
   println(random.nextInt(10000)+1)
+  println(MysqlUtil.getBlockNumber())
   /*
   val test = new HashMap[String,Double]
   test.put("1",1)

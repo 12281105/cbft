@@ -1,19 +1,20 @@
 package com.cbft.actors
 
+import java.util.Date
+
 import akka.actor.{Actor, ActorIdentity, ActorRef, ActorSelection, Cancellable, Identify, PoisonPill, Props, Status, Terminated}
 import akka.event.Logging
 import com.cbft.common.{NodeInfo, NodesActorRef}
 import com.cbft.configs.NodesConfig
 import com.cbft.messages._
-import com.cbft.utils.BroadcastUtil
+import com.cbft.utils.{BroadcastUtil, MysqlUtil}
+import com.roundeights.hasher.Implicits._
 
 import scala.concurrent.duration._
-import scala.collection.mutable.HashMap
+import scala.collection.mutable.{HashMap, LinkedHashSet}
 import scala.concurrent.Future
 import akka.pattern.ask
 import akka.util.Timeout
-
-import scala.util.Random
 
 class NodeOnlineActor extends Actor{
   implicit val timeout = Timeout(5 seconds)
@@ -43,6 +44,16 @@ class NodeOnlineActor extends Actor{
                   NodesActorRef.getNodesActorRef("online").filterKeys(_ != NodeInfo.getHostName()).foreach(tuple => {context.watch(tuple._2)})
                   if(NodeInfo.isPrimary()) {
                     BroadcastUtil.BroadcastMessage(new SyncFinish)
+
+                    //初始化完成后，创建创世块
+                    val blocknum = MysqlUtil.getBlockNumber()
+                    if(blocknum == 0) {
+                      val init_hash = "0000000000000000000000000000000000000000000000000000000000000000"
+                      val now = new Date()
+                      val nowtimestamp = now.getTime.toString.substring(0,10)
+                      val block = Block(0,init_hash,nowtimestamp,init_hash.sha256.hex,init_hash,new LinkedHashSet[(String,String)]())
+                      BroadcastUtil.BroadcastMessage(GenesisBlock(NodeInfo.getHostName(),"0",block,""))
+                    }
                   }
                 }
               }
@@ -72,6 +83,16 @@ class NodeOnlineActor extends Actor{
         log.info("NodeOnlineActor:{} actorRef ready",NodeInfo.getHostName())
         if(NodeInfo.isPrimary()){
           BroadcastUtil.BroadcastMessage(new SyncFinish)
+
+          //初始化完成后，创建创世块
+          val blocknum = MysqlUtil.getBlockNumber()
+          if(blocknum == 0) {
+            val init_hash = "0000000000000000000000000000000000000000000000000000000000000000"
+            val now = new Date()
+            val nowtimestamp = now.getTime.toString.substring(0,10)
+            val block = Block(0,init_hash,nowtimestamp,init_hash.sha256.hex,init_hash,new LinkedHashSet[(String,String)]())
+            BroadcastUtil.BroadcastMessage(GenesisBlock(NodeInfo.getHostName(),"0",block,""))
+          }
         }
       }
     }

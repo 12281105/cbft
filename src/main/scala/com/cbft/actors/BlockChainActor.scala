@@ -4,25 +4,36 @@ import akka.actor.{Actor, Status}
 import akka.event.Logging
 import com.cbft.common.{NodeInfo, ViewInfo}
 import com.cbft.messages.{Block, GenesisBlock, RawBlock, VoteResult}
+import com.cbft.utils.MysqlUtil
 import com.roundeights.hasher.Implicits._
 
 import scala.collection.mutable.HashMap
 
-class BlockChainActor extends Actor{
-  var curHeight : Int = 0
-  var preHash : String = null
-  var expectedBatchnum : Int = 0
-  val blocks = new HashMap[Int,Block]
-  val voteRess = new HashMap[Int,VoteResult]
+class BlockChainActor extends Actor {
+  var curHeight: Int = 0
+  var preHash: String = null
+  var expectedBatchnum: Int = 0
+  val blocks = new HashMap[Int, Block]
+  val voteRess = new HashMap[Int, VoteResult]
   val log = Logging(context.system, this)
+
+  {
+    //初始化curHeight和preHash
+    val blocknum = MysqlUtil.getBlockNumber()
+    //如果区块链已经生成了一些区块
+    if(blocknum>0){
+      curHeight = blocknum
+      preHash = MysqlUtil.getCurrentHash(blocknum-1)
+    }
+  }
 
   override def receive = {
     case genesisBlock : GenesisBlock => {
-      if(NodeInfo.getHostName().equals(genesisBlock.node) && "0".equals(genesisBlock.batchnum)){
+      if(ViewInfo.getPrimaryNode().equals(genesisBlock.node) && "0".equals(genesisBlock.batchnum)){
         log.info("COMMIT BLOCK: height = {} block = {}",curHeight,genesisBlock.block)
+        context.actorSelection("/user/cbft_storeblock") ! genesisBlock.block
         preHash = genesisBlock.block.cur_hash
         curHeight += 1
-        expectedBatchnum += 1
       }
     }
     case rawblock : RawBlock => {

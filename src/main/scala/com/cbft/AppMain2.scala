@@ -76,9 +76,5 @@ object AppMain2 extends App {
   })
   val scheduleActor : ActorRef = system.actorOf(Props(new ScheduleActor(schedulemap)),"cbft_schedule")
 
-  //初始化完成后，创建创世块
-  val block = Block(0,"0","0","0","0".sha256.hex,null)
-  system.actorSelection("/user/cbft_blockchain") ! GenesisBlock(NodeInfo.getHostName(),"0",block,"")
-
   //println (system.settings.config.getValue("cbft.node1.hostname").render()+"-"+system.settings.config.getValue("cbft.node1.port").render())
 }
