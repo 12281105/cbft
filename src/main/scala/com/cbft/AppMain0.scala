@@ -3,8 +3,8 @@ package com.cbft
 import akka.actor.{ActorIdentity, ActorRef, ActorSystem, Cancellable, Identify, Props}
 import akka.util.Timeout
 import com.cbft.actors._
-import com.cbft.common.{NodeInfo, ViewInfo}
-import com.cbft.configs.NodesConfig
+import com.cbft.common.NodeInfo
+import com.cbft.configs.{MysqlConfig, NodesConfig}
 
 import scala.concurrent.duration._
 import scala.collection.JavaConverters._
@@ -21,6 +21,10 @@ object AppMain0 extends App {
   val system = ActorSystem("cbft",ConfigFactory.load("node0.conf"))
   implicit val timeout = Timeout(5 seconds)
   import system.dispatcher
+
+  //加载数据库配置信息
+  val dbconfig = system.settings.config.getConfig("database")
+  MysqlConfig.initConfig(dbconfig.getString("driver"),dbconfig.getString("url"),dbconfig.getString("username"),dbconfig.getString("password"))
 
   //加载配置文件
   var nodemap = new HashMap[String,String]
@@ -45,6 +49,9 @@ object AppMain0 extends App {
   val blockVoteActor : ActorRef = system.actorOf(Props[BlockVoteActor],"cbft_blockvote")
   val blockVoteSetActor : ActorRef = system.actorOf(Props[BlockVoteSetActor],"cbft_blockvoteset")
   val blockChainActor : ActorRef = system.actorOf(Props[BlockChainActor],"cbft_blockchain")
+  val storeBlockActor : ActorRef = system.actorOf(Props[StoreBlockActor],"cbft_storeblock")
+  val executeTransactionActor : ActorRef = system.actorOf(Props[ExecuteTransactionActor],"cbft_executetransaction")
+  val updateStateActor : ActorRef = system.actorOf(Props(new UpdateStateActor("000001")),"cbft_updatestate")
   val onlineActor : ActorRef = system.actorOf(Props[NodeOnlineActor],"cbft_online")
 
   //检测节点启动
@@ -74,7 +81,7 @@ object AppMain0 extends App {
   val scheduleActor : ActorRef = system.actorOf(Props(new ScheduleActor(schedulemap)),"cbft_schedule")
 
   //初始化完成后，创建创世块
-  val block = Block("0","0","0","0","0".sha256.hex,null)
+  val block = Block(0,"0","0","0","0".sha256.hex,null)
   system.actorSelection("/user/cbft_blockchain") ! GenesisBlock(NodeInfo.getHostName(),"0",block,"")
 
   //println (system.settings.config.getValue("cbft.node1.hostname").render()+"-"+system.settings.config.getValue("cbft.node1.port").render())

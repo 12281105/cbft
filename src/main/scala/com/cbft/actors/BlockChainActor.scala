@@ -46,10 +46,12 @@ class BlockChainActor extends Actor{
               case Some(block) => {
                 if(tuple._2.result){
                   block.pre_hash = preHash
-                  block.height = (curHeight+"")
+                  block.height = curHeight
                   block.cur_hash = (block.pre_hash+block.merkle_root+block.timestamp).sha256.hex
                   //数据库存储新块，unimplement
                   log.info("COMMIT BLOCK: batch = {}  height = {}  size={}",expectedBatchnum,curHeight,block.requests.size)
+                  context.actorSelection("/user/cbft_storeblock") ! block
+                  context.actorSelection("/user/cbft_executetransaction") ! block
                   curHeight += 1
                   expectedBatchnum += 1
                   preHash = block.cur_hash
@@ -59,6 +61,7 @@ class BlockChainActor extends Actor{
                 else{
                   log.info("Discard rawblock in batchnum={}",tuple._1)
                   expectedBatchnum += 1
+                  blocks.remove(tuple._1)
                   voteRess.remove(tuple._1)
                 }
               }

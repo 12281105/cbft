@@ -38,11 +38,11 @@ class BuildBlockActor extends Actor{
               hash->null
           }
         })
-        block = new Block(null,null,nowtimestamp,tree.hash,null,requests)
+        block = new Block(-1,null,nowtimestamp,tree.hash,null,requests)
       }
       else{
         //如果为交易交集为空，建空块
-        block = new Block(null,null,null,null,null,null)
+        block = new Block(-1,null,null,null,null,null)
       }
       //println("build block:batchnum={} commonHashset={}",commonHashSet.batchnum,block.requests.size)
       //如果是主节点将新块发送给其他节点验证

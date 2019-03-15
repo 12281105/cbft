@@ -7,11 +7,11 @@ import akka.event.Logging
 import akka.util.Timeout
 import com.cbft.AppMain0.system
 import com.cbft.common.{NodeInfo, NodesActorRef}
-import com.cbft.configs.{NodesConfig, RedisClient}
+import com.cbft.configs.{MysqlConfig, NodesConfig, RedisClient}
 import com.roundeights.hasher.Implicits._
 
 import scala.language.postfixOps
-import com.cbft.messages.{ActorRefReady, Request}
+import com.cbft.messages.{ActorRefReady, Request, Transaction}
 import spray.json._
 import com.cbft.messages.MessageJsonProtocol._
 import com.cbft.utils.MerkleTree
@@ -23,6 +23,7 @@ import scala.collection.mutable.{HashMap, LinkedHashSet}
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.util.Random
 
 object TestMain extends App{
   val system = ActorSystem("cbft_test",ConfigFactory.load("nodetest.conf"))
@@ -51,16 +52,29 @@ object TestMain extends App{
     })
   })
   Thread.sleep(5000)
+
+  val baseid = "000001"
+  val amount = 1
+  var accounts : List[String] = List()
+  for ( serialnum <- 0 to 9999 ){
+    accounts = accounts :+ (baseid+"%010d".format(serialnum))
+  }
+  val random = new Random()
+
   for(i <- 1 to 100000){
     val now = new Date()
     val nowtimestamp = now.getTime.toString.substring(0,10)
+    val from = accounts( random.nextInt(10000) )
+    val to = accounts( random.nextInt(10000) )
+    val tran = Transaction((from+to+amount+nowtimestamp).sha256.hex,from,to,amount,nowtimestamp,(i+"").sha256.hex)
     actorRefMap.foreach(tuple => {
-      tuple._2 ! Request(i.toString,"add",nowtimestamp,localhost,"")
+      tuple._2 ! Request(i.toString,tran,nowtimestamp,localhost)
     })
-    if(i%1000==0){
+    if(i%100==0){
       Thread.sleep(100)
     }
   }
+
   /*
   def hash256(origin : String ): String ={
     origin.sha256.hex

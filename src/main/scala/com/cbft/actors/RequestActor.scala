@@ -67,7 +67,7 @@ class RequestActor extends Actor{
       //RedisClient.getJedis.set()
       RedisUtil.HashSet(NodeInfo.getHostName()+"_requests_batch_"+batchnum,requesthash,requestjson)
 
-      if(requestSet.size >= 1000){ //每处理1000个消息，向其他节点发送消息列表
+      if(requestSet.size >= 100){ //每处理1000个消息，向其他节点发送消息列表
         val sendRequestHashSet = requestSet.clone()
         BroadcastUtil.BroadcastMessage(new RequestHashSet(NodeInfo.getHostName(),batchnum+"",sendRequestHashSet,""))
         batchnum += 1
