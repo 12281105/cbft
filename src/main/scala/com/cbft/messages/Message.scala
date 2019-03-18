@@ -38,6 +38,8 @@ case class RawBlock(node : String,batchnum : String,block : Block,sign : String)
 
 case class GenesisBlock(node : String,batchnum : String,block : Block,sign : String) extends Message
 
+case class CleanUp(batchnum : String,request_hash : LinkedHashSet[String]) extends Message
+
 case class VoteResult(batchnum : String,result : Boolean) extends Message
 
 case class ReadWriteItem(account : String ,change : Double) extends Message

@@ -50,6 +50,7 @@ object AppMain0 extends App {
   val blockVoteSetActor : ActorRef = system.actorOf(Props[BlockVoteSetActor],"cbft_blockvoteset")
   val blockChainActor : ActorRef = system.actorOf(Props[BlockChainActor],"cbft_blockchain")
   val storeBlockActor : ActorRef = system.actorOf(Props[StoreBlockActor],"cbft_storeblock")
+  val cleanupActor : ActorRef = system.actorOf(Props[CleanupActor],"cbft_cleanup")
   val executeTransactionActor : ActorRef = system.actorOf(Props[ExecuteTransactionActor],"cbft_executetransaction")
   val updateStateActor : ActorRef = system.actorOf(Props(new UpdateStateActor("000001")),"cbft_updatestate")
   val onlineActor : ActorRef = system.actorOf(Props[NodeOnlineActor],"cbft_online")

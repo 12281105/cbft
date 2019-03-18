@@ -19,11 +19,13 @@ import scala.language.postfixOps
 
 class RequestActor extends Actor{
   //requestSet 多个线程共享变量，可能需要特殊处理
-  val requestSet = new LinkedHashSet[String]
+  var requestSet = new LinkedHashSet[String]
   val log = Logging(context.system, this)
-  //var schedule : Cancellable = null
+  var schedule : Cancellable = null
   //每一秒钟接收到的所有request为一个batch，batchnum和块高度无直接联系
   var batchnum : Int = 0
+  var notcount : Int = 0
+  var locker : String = ""
   //var batchnumredis : Int = 1
 
   override def receive = {
@@ -34,6 +36,30 @@ class RequestActor extends Actor{
       log.info("blockchain {} sync finish",NodeInfo.getHostName())
       context.become(syncFinish)
       //向其他节点广播发送requestSet,节点签名暂未实现
+      if(schedule==null){
+        import context.dispatcher
+        schedule = context.system.scheduler.schedule(3 seconds,3 seconds,new Runnable {
+          override def run(): Unit = {
+            locker.synchronized {
+              val requestnum = requestSet.size
+              if (requestnum > 0) {
+                println("RequestActor request size:" + requestnum)
+                val sendRequestHashSet = requestSet.take(requestnum)
+                BroadcastUtil.BroadcastMessage(new RequestHashSet(NodeInfo.getHostName(), batchnum + "", sendRequestHashSet, ""))
+                batchnum += 1
+                requestSet = requestSet.drop(requestnum)
+              } else {
+                notcount += 1
+                if (notcount >= 1000) {
+                  log.info("RequestActor have not received any request")
+                  notcount = 0
+                }
+              }
+            }
+          }
+        })
+      }
+
       /*
       if(NodeInfo.isPrimary()){
         import context.dispatcher
@@ -63,16 +89,19 @@ class RequestActor extends Actor{
       //处理Request消息,Hash request，将交易本身送入redis缓存
       val requestjson = request.toJson.toString
       val requesthash = requestjson.sha256.hex
-      requestSet.add(requesthash)
-      //RedisClient.getJedis.set()
-      RedisUtil.HashSet(NodeInfo.getHostName()+"_requests_batch_"+batchnum,requesthash,requestjson)
-
+      locker.synchronized {
+        requestSet.add(requesthash)
+        //RedisClient.getJedis.set()
+        RedisUtil.HashSet(NodeInfo.getHostName() + "_requests_batch_" + batchnum, requesthash, requestjson)
+      }
+      /*
       if(requestSet.size >= 100){ //每处理1000个消息，向其他节点发送消息列表
         val sendRequestHashSet = requestSet.clone()
         BroadcastUtil.BroadcastMessage(new RequestHashSet(NodeInfo.getHostName(),batchnum+"",sendRequestHashSet,""))
         batchnum += 1
         requestSet.clear()
       }
+      */
     }
     /*
     case sendr : SendRequestHashSet => {

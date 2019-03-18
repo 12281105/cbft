@@ -47,6 +47,7 @@ object AppMain3 extends App {
   val blockVoteSetActor : ActorRef = system.actorOf(Props[BlockVoteSetActor],"cbft_blockvoteset")
   val blockChainActor : ActorRef = system.actorOf(Props[BlockChainActor],"cbft_blockchain")
   val storeBlockActor : ActorRef = system.actorOf(Props[StoreBlockActor],"cbft_storeblock")
+  val cleanupActor : ActorRef = system.actorOf(Props[CleanupActor],"cbft_cleanup")
   val executeTransactionActor : ActorRef = system.actorOf(Props[ExecuteTransactionActor],"cbft_executetransaction")
   val updateStateActor : ActorRef = system.actorOf(Props(new UpdateStateActor("000001")),"cbft_updatestate")
   val onlineActor : ActorRef = system.actorOf(Props[NodeOnlineActor],"cbft_online")
@@ -58,7 +59,7 @@ object AppMain3 extends App {
     val address = entry._2
     val cbft_online = system.actorSelection(s"akka.tcp://cbft@$address/user/cbft_online")
     //println(s"akka.tcp://cbft@$address/user/cbft_online")
-    val schedule = system.scheduler.schedule(5 seconds,5 seconds,new Runnable{
+    val schedule = system.scheduler.schedule(1 seconds,5 seconds,new Runnable{
       override def run(): Unit = {
         val msg = Identify(nodename)
         val identityf: Future[ActorIdentity] = (cbft_online ? msg).mapTo[ActorIdentity]

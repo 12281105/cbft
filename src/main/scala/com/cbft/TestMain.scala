@@ -52,7 +52,7 @@ object TestMain extends App{
   }
   val random = new Random()
 
-  for(i <- 1 to 1000){
+  for(i <- 1 to 100000){
     val now = new Date()
     val nowtimestamp = now.getTime.toString.substring(0,10)
     val from = accounts( random.nextInt(10000) )

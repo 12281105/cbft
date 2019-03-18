@@ -15,4 +15,9 @@ object RedisUtil {
     RedisClient.returnJedis(jedis)
     return res.asScala.toMap
   }
+  def DeleteKey(key1 : String): Unit = {
+    val jedis = RedisClient.getJedis
+    jedis.del(key1)
+    RedisClient.returnJedis(jedis)
+  }
 }

@@ -26,14 +26,16 @@ class ActorRefActor extends Actor{
           val actorRefFuture : Future[ActorRef] = context.actorSelection(s"akka.tcp://cbft@$address/user/cbft_$tp").resolveOne()
           actorRefFuture.onSuccess({
             case actorRef : ActorRef =>
-              NodesActorRef.addNodeActorRef(tp,node,actorRef)
-              this.synchronized (refcount += 1)
-              println(refcount)
-              if(refcount == NodesConfig.NodeSize()*reftype.size){  //ActorRefActor完成，向所有节点的onlineActor报告
-                //val primaryNodeAddress = NodesConfig.getNode(ViewInfo.getPrimaryNode())
-                NodesConfig.getNodes().foreach(tuple => {
-                  context.actorSelection(s"akka.tcp://cbft@${tuple._2}/user/cbft_online") ! new ActorRefReady()
-                })
+              this.synchronized {
+                NodesActorRef.addNodeActorRef(tp, node, actorRef)
+                refcount += 1
+                println(refcount)
+                if (refcount == NodesConfig.NodeSize() * reftype.size) { //ActorRefActor完成，向所有节点的onlineActor报告
+                  //val primaryNodeAddress = NodesConfig.getNode(ViewInfo.getPrimaryNode())
+                  NodesConfig.getNodes().foreach(tuple => {
+                    context.actorSelection(s"akka.tcp://cbft@${tuple._2}/user/cbft_online") ! new ActorRefReady()
+                  })
+                }
               }
           })
           actorRefFuture.onFailure({

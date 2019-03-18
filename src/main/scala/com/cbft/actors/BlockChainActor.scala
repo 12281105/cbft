@@ -3,7 +3,7 @@ package com.cbft.actors
 import akka.actor.{Actor, Status}
 import akka.event.Logging
 import com.cbft.common.{NodeInfo, ViewInfo}
-import com.cbft.messages.{Block, GenesisBlock, RawBlock, VoteResult}
+import com.cbft.messages._
 import com.cbft.utils.MysqlUtil
 import com.roundeights.hasher.Implicits._
 
@@ -63,6 +63,7 @@ class BlockChainActor extends Actor {
                   log.info("COMMIT BLOCK: batch = {}  height = {}  size={}",expectedBatchnum,curHeight,block.requests.size)
                   context.actorSelection("/user/cbft_storeblock") ! block
                   context.actorSelection("/user/cbft_executetransaction") ! block
+                  context.actorSelection("/user/cbft_cleanup") ! CleanUp(expectedBatchnum.toString,block.requests.map(entry=>entry._1))
                   curHeight += 1
                   expectedBatchnum += 1
                   preHash = block.cur_hash
@@ -71,6 +72,7 @@ class BlockChainActor extends Actor {
                 }
                 else{
                   log.info("Discard rawblock in batchnum={}",tuple._1)
+                  context.actorSelection("/user/cbft_cleanup") ! CleanUp(expectedBatchnum.toString,null)
                   expectedBatchnum += 1
                   blocks.remove(tuple._1)
                   voteRess.remove(tuple._1)
