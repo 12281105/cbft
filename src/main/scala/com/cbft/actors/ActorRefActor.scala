@@ -14,6 +14,7 @@ class ActorRefActor extends Actor{
   val reftype : List[String] = List("actorref","online","request","requesthashset","verifyblock","blockvote","blockvoteset","blockchain")
   var refcount : Int = 0
   val log = Logging(context.system, this)
+  val lock = ""
   implicit val timeout = Timeout(5 seconds)
   import context.dispatcher
 
@@ -26,7 +27,7 @@ class ActorRefActor extends Actor{
           val actorRefFuture : Future[ActorRef] = context.actorSelection(s"akka.tcp://cbft@$address/user/cbft_$tp").resolveOne()
           actorRefFuture.onSuccess({
             case actorRef : ActorRef =>
-              this.synchronized {
+              lock.synchronized {
                 NodesActorRef.addNodeActorRef(tp, node, actorRef)
                 refcount += 1
                 println(refcount)

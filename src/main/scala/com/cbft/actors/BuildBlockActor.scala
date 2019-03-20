@@ -27,7 +27,7 @@ class BuildBlockActor extends Actor{
         val tree = MerkleTree(requestHashs.toList, hash256)
         //从redis缓存中取交易
         val requestmap = RedisUtil.GetRequests(NodeInfo.getHostName()+"_requests_batch_"+commonHashSet.batchnum)
-        println("batchnum:"+commonHashSet.batchnum+"-->redis request size:"+requestmap.size)
+        println("RequestHashSetActor >>>>> buildblock batch ["+commonHashSet.batchnum+"] request in redis size:"+requestmap.size)
         //当前版本是从四个交易HashSet取交集，所以requests不可能包含null，
         //在下个版本取2/3个节点以上的交集，可能出现主节点没有该交易，而3个从节点中有此交易，造成requests中包含null，这该如何处理？？？
         val requests = requestHashs.map(hash => {

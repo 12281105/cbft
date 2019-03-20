@@ -4,7 +4,7 @@ import java.util.Date
 
 import akka.actor.{Actor, ActorIdentity, ActorRef, ActorSelection, Cancellable, Identify, PoisonPill, Props, Status, Terminated}
 import akka.event.Logging
-import com.cbft.common.{NodeInfo, NodesActorRef}
+import com.cbft.common.{NodeInfo, NodeOnlineInfo, NodesActorRef, ViewInfo}
 import com.cbft.configs.NodesConfig
 import com.cbft.messages._
 import com.cbft.utils.{BroadcastUtil, MysqlUtil}
@@ -15,6 +15,8 @@ import scala.collection.mutable.{HashMap, LinkedHashSet}
 import scala.concurrent.Future
 import akka.pattern.ask
 import akka.util.Timeout
+
+import scala.collection.mutable
 
 class NodeOnlineActor extends Actor{
   implicit val timeout = Timeout(5 seconds)
@@ -32,6 +34,7 @@ class NodeOnlineActor extends Actor{
             case true => {
               log.info("node {} is online",node)
               online.put(node,boolean)
+              NodeOnlineInfo.addNodeState(node,boolean)
               scheduleSelection ! NodeOnline(node,true)
               //当上线的节点数等于配置文件中的节点数，向其他Actor发送启动信息(Broadcast)
               if(online.size == NodesConfig.NodeSize()){
@@ -64,6 +67,7 @@ class NodeOnlineActor extends Actor{
             case false => {  //其他节点主动向本节点发送NodeOnline（node，false）消息
               log.info("node {} is offline",node)
               online.put(node,boolean)
+              NodeOnlineInfo.addNodeState(node,boolean)
               //某个节点断开之后，可以开始新一轮的主节点选主(View Change) ??? unimplement
 
             }
@@ -96,6 +100,25 @@ class NodeOnlineActor extends Actor{
         }
       }
     }
+    case Terminated(actorRef) =>{
+      val nodename = NodesActorRef.getNodesActorRef("online").filter(tuple => tuple._2==actorRef).keys.head
+      NodeOnlineInfo.addNodeState(nodename,false)
+      println("NodeOnlineActor >>>>> "+nodename+" fall down")
+      if(NodeOnlineInfo.onlineNodeSize()>(2/3.0*NodesConfig.NodeSize())){
+        if(ViewInfo.getPrimaryNode().equals(nodename)){
+          //如果是主节点宕机,视图变更
+
+        }
+        else{
+          //如果是从节点宕机
+
+        }
+      }
+      else{
+        NodesActorRef.getNodeActorRef("request",NodeInfo.getHostName()) ! NodeOnline(nodename, false)
+      }
+    }
+    /*
     case Terminated(actorRef) =>{
       val nodename = NodesActorRef.getNodesActorRef("online").filter(tuple => tuple._2==actorRef).keys.head
       println(nodename)
@@ -145,6 +168,7 @@ class NodeOnlineActor extends Actor{
       })
 
     }
+    */
     case o => {
       log.info("received unknown message: {}", o)
       Status.Failure(new ClassNotFoundException)

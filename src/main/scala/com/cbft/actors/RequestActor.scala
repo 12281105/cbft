@@ -43,7 +43,7 @@ class RequestActor extends Actor{
             locker.synchronized {
               val requestnum = requestSet.size
               if (requestnum > 0) {
-                println("RequestActor request size:" + requestnum)
+                println("RequestActor >>>>> request batch ["+batchnum+"] request size:" + requestnum)
                 val sendRequestHashSet = requestSet.take(requestnum)
                 BroadcastUtil.BroadcastMessage(new RequestHashSet(NodeInfo.getHostName(), batchnum + "", sendRequestHashSet, ""))
                 batchnum += 1

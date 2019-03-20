@@ -14,21 +14,21 @@ class CleanupActor extends Actor{
   val log = Logging(context.system, this)
   var return_requests = new LinkedHashSet[Request]
   var schedule : Cancellable = null
+  val lock = ""
 
   {
     import context.dispatcher
     schedule = context.system.scheduler.schedule(5 seconds,5 seconds,new Runnable {
       override def run(): Unit = {
-        this.synchronized {
+        lock.synchronized {
           val requestnum = return_requests.size
           if (requestnum > 0) {
-            println("CleanupActor request size:" + requestnum)
             val send_requests = return_requests.take(requestnum)
             send_requests.foreach(req => {
               context.actorSelection("/user/cbft_request") ! req
             })
             return_requests = return_requests.drop(requestnum)
-            println("send request back to RequestActor:" + requestnum)
+            println("CleanupActor >>>>> request not in block size:" + requestnum)
           }
         }
       }
@@ -44,7 +44,7 @@ class CleanupActor extends Actor{
       if(clean.request_hash!=null){
         req_not_in_block = requestmap.--(clean.request_hash)
       }
-      this.synchronized {
+      lock.synchronized {
         req_not_in_block.foreach(entry => return_requests.add(entry._2.parseJson.convertTo[Request]))
       }
       RedisUtil.DeleteKey(redis_key)

@@ -25,7 +25,7 @@ class VerifyBlockActor extends Actor{
         var verifyResult : Boolean = true
         val commonHashSet = commonHashtable.getOrElse(verifyBlock.batchnum,null)
         if(commonHashSet!=null){
-          if(verifyBlock.block.requests == null){
+          if(verifyBlock.block.requests == null || verifyBlock.block.requests.size==0){
             verifyResult = false
           }
           else{
@@ -60,7 +60,7 @@ class VerifyBlockActor extends Actor{
         if(ViewInfo.getPrimaryNode().equals(verifyBlock.node)){
           var verifyResult : Boolean = true
           val commonSet = commonHashSet.commonset
-          if(verifyBlock.block.requests == null){
+          if(verifyBlock.block.requests == null || verifyBlock.block.requests == null || verifyBlock.block.requests.size==0){
             verifyResult = false
           }
           else{

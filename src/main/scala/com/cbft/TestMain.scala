@@ -17,6 +17,7 @@ import scala.concurrent.duration._
 import scala.util.Random
 
 object TestMain extends App{
+  val lock = ""
   val system = ActorSystem("cbft_test",ConfigFactory.load("nodetest.conf"))
   //println(system.dispatchers.defaultDispatcherConfig)
   //加载配置文件
@@ -34,7 +35,7 @@ object TestMain extends App{
     val actorRefFuture : Future[ActorRef] = system.actorSelection(s"akka.tcp://cbft@$address/user/cbft_request").resolveOne()
     actorRefFuture.onSuccess({
       case actorRef : ActorRef =>
-        this.synchronized{
+        lock.synchronized{
           actorRefMap.put(tuple._1,actorRef)
         }
     })
@@ -52,7 +53,7 @@ object TestMain extends App{
   }
   val random = new Random()
 
-  for(i <- 1 to 100000){
+  for(i <- 1 to 10000){
     val now = new Date()
     val nowtimestamp = now.getTime.toString.substring(0,10)
     val from = accounts( random.nextInt(10000) )
