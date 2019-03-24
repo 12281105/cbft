@@ -25,16 +25,18 @@ object NodeInfo{
 
   def setHostName(name : String): Unit = {
     nodeInfo.setHostName_(name)
-    viewChange()
-    println(nodeInfo.isPrimary)
   }
 
-  def viewChange(): Unit = {
+  def viewChange(): Boolean = {
     var curView = ViewInfo.getView()
     var nodeNames = NodesConfig.getNodeNames()
+    if(NodeOnlineInfo.getNodeState(nodeNames.apply(curView%NodesConfig.NodeSize()))==false){
+      return false
+    }
     //判断本节点是否为主节点
     nodeInfo.isPrimary = (curView%NodesConfig.NodeSize() == nodeNames.indexOf(nodeInfo.hostname))
     ViewInfo.setPrimaryNode(nodeNames.apply(curView%NodesConfig.NodeSize()))
+    return true
   }
 
   def isPrimary(): Boolean = {

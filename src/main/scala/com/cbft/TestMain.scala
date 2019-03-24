@@ -62,7 +62,7 @@ object TestMain extends App{
     actorRefMap.foreach(tuple => {
       tuple._2 ! Request(i.toString,tran,nowtimestamp,localhost)
     })
-    if(i%100==0){
+    if(i%10==0){
       Thread.sleep(100)
     }
   }

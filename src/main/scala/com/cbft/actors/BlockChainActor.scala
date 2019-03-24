@@ -6,7 +6,7 @@ import com.cbft.common.{NodeInfo, ViewInfo}
 import com.cbft.messages._
 import com.cbft.utils.MysqlUtil
 import com.roundeights.hasher.Implicits._
-
+import scala.concurrent.duration._
 import scala.collection.mutable.HashMap
 
 class BlockChainActor extends Actor {
@@ -36,6 +36,21 @@ class BlockChainActor extends Actor {
         curHeight += 1
       }
     }
+    case x : ViewChange =>{
+      import context.dispatcher
+      context.system.scheduler.scheduleOnce(5 seconds,new Runnable{
+        override def run(): Unit = {
+          var batchnum_start = expectedBatchnum
+          var batchnum_end = expectedBatchnum
+          val mlist = voteRess.toSeq.sortBy(_._1)
+          if(mlist.size!=0){
+            batchnum_end = voteRess.toSeq.sortBy(_._1).apply(0)._1
+          }
+          println("BlockChainActor >>>>> viewchange occur batchnum_start="+batchnum_start+" and batchnum_end="+batchnum_end)
+          context.actorSelection("/user/cbft_buildblock") ! BlockRetrans(batchnum_start,batchnum_end)
+        }
+      })
+    }
     case rawblock : RawBlock => {
       //验证是否是主节点发送的Block 和 签名信息 unimplemented ???
       if(ViewInfo.getPrimaryNode().equals(rawblock.node)){
@@ -47,6 +62,7 @@ class BlockChainActor extends Actor {
     }
     case voteResult : VoteResult => {
       //如果投票结果的batchnum和expectedBatchnum相等
+      println("BlockChainActor >>>>> receive voteResult batch ["+voteResult.batchnum+"]")
       if((expectedBatchnum+"").equals(voteResult.batchnum)){
         voteRess.put(voteResult.batchnum.toInt,voteResult)
         var notBreak = true
@@ -64,6 +80,7 @@ class BlockChainActor extends Actor {
                   context.actorSelection("/user/cbft_storeblock") ! block
                   context.actorSelection("/user/cbft_executetransaction") ! block
                   context.actorSelection("/user/cbft_cleanup") ! CleanUp(expectedBatchnum.toString,block.requests.map(entry=>entry._1))
+                  context.actorSelection("/user/cbft_buildblock") ! BlockConfirm(expectedBatchnum)
                   curHeight += 1
                   expectedBatchnum += 1
                   preHash = block.cur_hash
@@ -73,6 +90,7 @@ class BlockChainActor extends Actor {
                 else{
                   log.info("Discard rawblock in batchnum={}",tuple._1)
                   context.actorSelection("/user/cbft_cleanup") ! CleanUp(expectedBatchnum.toString,null)
+                  context.actorSelection("/user/cbft_buildblock") ! BlockConfirm(expectedBatchnum)
                   expectedBatchnum += 1
                   blocks.remove(tuple._1)
                   voteRess.remove(tuple._1)

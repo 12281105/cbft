@@ -22,7 +22,7 @@ class BlockVoteSetActor extends Actor{
         votesets = HashSet(blockVoteSet)
         blockVoteSets.put(blockVoteSet.batchnum,votesets)
         var schedule: Option[Cancellable] = None
-        schedule = Some(context.system.scheduler.schedule(10 seconds,10 seconds,new Runnable{
+        schedule = Some(context.system.scheduler.schedule(5 seconds,5 seconds,new Runnable{
           val batchnum = blockVoteSet.batchnum
           var count = 0
           override def run(): Unit = {
@@ -70,6 +70,7 @@ class BlockVoteSetActor extends Actor{
                 blockVoteSets.remove(batchnum)
                 schedule_tables.remove(batchnum)
                 schedule.foreach(_.cancel())
+                context.actorSelection("/user/cbft_blockchain") ! VoteResult(batchnum,false)
               }
             }
           }

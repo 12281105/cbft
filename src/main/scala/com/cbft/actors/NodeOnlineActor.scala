@@ -44,6 +44,10 @@ class NodeOnlineActor extends Actor{
                 scheduleSelection ! PoisonPill
                 //如果本节点是主节点，向所有节点的RequestActor发送同步完成的消息
                 if(actorRefReady == NodesConfig.NodeSize()){
+                  while(NodeInfo.viewChange()==false){
+                    ViewInfo.viewInc()
+                  }
+                  println("NodeOnlineActor >>>>> "+ViewInfo.getPrimaryNode()+" become the primary")
                   NodesActorRef.getNodesActorRef("online").filterKeys(_ != NodeInfo.getHostName()).foreach(tuple => {context.watch(tuple._2)})
                   if(NodeInfo.isPrimary()) {
                     BroadcastUtil.BroadcastMessage(new SyncFinish)
@@ -82,9 +86,13 @@ class NodeOnlineActor extends Actor{
     case x : ActorRefReady => {
       actorRefReady += 1
       if(online.size == NodesConfig.NodeSize() && actorRefReady == NodesConfig.NodeSize()){
+        log.info("NodeOnlineActor:{} actorRef ready",NodeInfo.getHostName())
+        while(NodeInfo.viewChange()==false){
+          ViewInfo.viewInc()
+        }
+        println("NodeOnlineActor >>>>> "+ViewInfo.getPrimaryNode()+" become the primary")
         //监控其他节点是否在线，NodeOnlineActor
         NodesActorRef.getNodesActorRef("online").filterKeys(_ != NodeInfo.getHostName()).foreach(tuple => {context.watch(tuple._2)})
-        log.info("NodeOnlineActor:{} actorRef ready",NodeInfo.getHostName())
         if(NodeInfo.isPrimary()){
           BroadcastUtil.BroadcastMessage(new SyncFinish)
 
@@ -107,7 +115,12 @@ class NodeOnlineActor extends Actor{
       if(NodeOnlineInfo.onlineNodeSize()>(2/3.0*NodesConfig.NodeSize())){
         if(ViewInfo.getPrimaryNode().equals(nodename)){
           //如果是主节点宕机,视图变更
-
+          ViewInfo.viewInc()
+          while(NodeInfo.viewChange()==false){
+            ViewInfo.viewInc()
+          }
+          println("NodeOnlineActor >>>>> "+ViewInfo.getPrimaryNode()+" become the primary")
+          context.actorSelection("/user/cbft_blockchain") ! ViewChange()
         }
         else{
           //如果是从节点宕机

@@ -23,7 +23,7 @@ class BlockVoteActor extends Actor{
         votes = HashSet(blockVote)
         blockVotes.put(blockVote.batchnum,votes)
         var schedule: Option[Cancellable] = None
-        schedule = Some(context.system.scheduler.schedule(10 seconds,10 seconds,new Runnable{
+        schedule = Some(context.system.scheduler.schedule(5 seconds,5 seconds,new Runnable{
           val batchnum = blockVote.batchnum
           var count = 0
           override def run(): Unit = {

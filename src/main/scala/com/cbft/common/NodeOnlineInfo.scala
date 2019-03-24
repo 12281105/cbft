@@ -4,8 +4,8 @@ import scala.collection.mutable.HashMap
 
 class NodeOnlineInfo private{
   var online_nodes = new HashMap[String,Boolean]()
-  var online_size : Int = 0;
-  val lock = "";
+  var online_size : Int = 0
+  val lock = ""
 
   private def addNodeState_(nodeName:String,state:Boolean): Unit ={
     lock.synchronized {

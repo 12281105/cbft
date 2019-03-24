@@ -46,6 +46,12 @@ case class ReadWriteItem(account : String ,change : Double) extends Message
 
 case class ReadWriteSet(newstates : HashMap[String,Double]) extends Message
 
+case class BlockConfirm(batchnum : Int) extends Message
+
+case class BlockRetrans(batchnum_start : Int,batchnum_end : Int) extends Message
+
+case class ViewChange() extends Message
+
 case class SyncFinish() extends Message
 
 object MessageJsonProtocol extends DefaultJsonProtocol {
